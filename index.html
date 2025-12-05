@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Inventory & Sales System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root{
+            --bg: #f6f7fb;
+            --sidebar: #0f1724;
+            --muted: #7b8794;
+            --accent: linear-gradient(135deg,#5b8def 0%,#6f4ef7 100%);
+            --card: #ffffff;
+            --primary: #3657d6;
+            --success: #28a745;
+            --danger: #e74c3c;
+        }
+        *{box-sizing:border-box}
+        body {
+            margin: 0;
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: var(--bg);
+            color:#111827;
+            -webkit-font-smoothing:antialiased;
+        }
+        .sidebar {
+            width: 240px;
+            background: var(--sidebar);
+            color: rgb(240, 230, 230);
+            height: 100vh;
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            padding: 22px 18px;
+            gap: 6px;
+        }
+        .brand {
+            display:flex;align-items:center;gap:10px;margin-bottom:6px;
+        }
+        .brand h2{font-size:18px;margin:0;font-weight:700}
+        .sidebar a {
+            color: #f0f2f5;
+            text-decoration: firebrick;
+            padding: 10px 12px;
+            display: block;
+            border-radius: 8px;
+            margin-bottom: 6px;
+            transition: background .18s, transform .12s;
+            font-size:14px;
+        }
+        .sidebar a:hover {background: rgba(255,255,255,0.04);transform:translateX(4px)}
+        .main {
+            margin-left: 260px;
+            padding: 28px 28px 80px 28px;
+            min-height: 100vh;
+        }
+        .topbar{
+            display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;
+        }
+        .topbar .title{display:flex;flex-direction:column}
+        .topbar h1{margin:0;font-size:20px}
+        .search {
+            display:flex;align-items:center;gap:8px;background:white;padding:8px;border-radius:10px;box-shadow:0 2px 8px rgba(16,24,40,.06);min-width:260px
+        }
+        .search input{border:0;outline:0;font-size:14px;width:200px}
+        .card-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+        }
+        .card {
+            background: var(--card);
+            padding: 18px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(14,30,50,0.06);
+            transition: transform .18s, box-shadow .18s;
+        }
+        .card:hover{transform:translateY(-4px);box-shadow:0 14px 30px rgba(14,30,50,0.08)}
+        .card h3 {margin:0 0 6px 0;font-size:15px}
+        .card p{margin:0;color:var(--muted)}
+        .section-title {margin-top:22px;font-size:18px;font-weight:700}
+        table {width:100%;border-collapse:separate;border-spacing:0 8px;margin-top:12px}
+        table thead th{padding:12px 16px;text-align:left;color:var(--muted);font-weight:600;font-size:13px}
+        table tbody tr{background:var(--card);border-radius:8px;box-shadow:0 4px 10px rgba(16,24,40,0.03);transition:transform .12s}
+        table tbody tr:hover{transform:translateY(-3px)}
+        table td{padding:12px 16px;border:none}
+        .btn {display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:var(--primary);color:white;text-decoration:none;border-radius:8px;font-weight:600;box-shadow:0 6px 18px rgba(54,87,214,0.12)}
+        .btn:active{transform:translateY(1px)}
+        .muted{color:var(--muted);font-size:13px}
+        .pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:var(--primary);font-weight:600;font-size:12px}
+
+        /* modal */
+        .modal-overlay{position:fixed;inset:0;background:rgba(2,6,23,0.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:60}
+        .modal-overlay.active{display:flex}
+        .modal{background:var(--card);width:100%;max-width:980px;border-radius:12px;box-shadow:0 20px 60px rgba(2,6,23,0.4);overflow:hidden}
+        .modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f1f5f9}
+        .modal-title{font-weight:700;font-size:16px}
+        .modal-body{padding:18px;max-height:60vh;overflow:auto}
+        .modal-close{background:transparent;border:0;font-size:18px;cursor:pointer}
+
+        /* responsive */
+        @media (max-width:900px){
+            .sidebar{position:relative;width:100%;height:auto;display:flex;flex-direction:row;overflow:auto}
+            .main{margin-left:0;padding-top:12px}
+            table thead th{display:none}
+            table tbody td{display:block;padding:10px}
+            table tbody tr{margin-bottom:10px}
+            .search input{width:120px}
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>STOCK 360 POS</h2>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#products">Products</a>
+        <a href="#inventory">Inventory</a>
+        <a href="#sales">Sales</a>
+        <a href="#customers">Customers</a>
+        <a href="#suppliers">Suppliers</a>
+        <a href="#expenses">Expenses</a>
+        <a href="#reports">Reports</a>
+        <a href="#users">Staff Users</a>
+        <a href="#settings">System Settings</a>
+    </div>
+    <!-- Modals (hidden by default) -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal-products" data-name="products" style="display:none">
+            <div class="modal-header"><div class="modal-title">Products</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Add Product</a>
+                <table>
+                    <thead><tr><th>Product</th><th>Category</th><th>Buying Price</th><th>Selling Price</th><th>Stock</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        <tr><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>Edit | Delete</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-inventory" data-name="inventory" style="display:none">
+            <div class="modal-header"><div class="modal-title">Inventory</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Add Stock</a>
+                <table>
+                    <thead><tr><th>Product</th><th>Current Stock</th><th>Reorder Level</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-sales" data-name="sales" style="display:none">
+            <div class="modal-header"><div class="modal-title">Sales</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Record Sale</a>
+                <table>
+                    <thead><tr><th>Receipt</th><th>Date</th><th>Total</th><th>Payment Method</th><th>Actions</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>—</td><td>—</td><td>View | Print</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-customers" data-name="customers" style="display:none">
+            <div class="modal-header"><div class="modal-title">Customers</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Add Customer</a>
+                <table>
+                    <thead><tr><th>Name</th><th>Phone</th><th>Total Purchases</th><th>Debt</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-suppliers" data-name="suppliers" style="display:none">
+            <div class="modal-header"><div class="modal-title">Suppliers</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Add Supplier</a>
+                <table>
+                    <thead><tr><th>Name</th><th>Contact</th><th>Total Purchases</th><th>Balance</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-expenses" data-name="expenses" style="display:none">
+            <div class="modal-header"><div class="modal-title">Expenses</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Add Expense</a>
+                <table>
+                    <thead><tr><th>Category</th><th>Amount</th><th>Date</th><th>Description</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-reports" data-name="reports" style="display:none">
+            <div class="modal-header"><div class="modal-title">Reports</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Generate Report</a>
+                <table>
+                    <thead><tr><th>Report Type</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>Download</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-users" data-name="users" style="display:none">
+            <div class="modal-header"><div class="modal-title">Staff Users</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <a class="btn">Add User</a>
+                <table>
+                    <thead><tr><th>Name</th><th>Role</th><th>Last Login</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>—</td><td>—</td><td>—</td><td>Active</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal" id="modal-settings" data-name="settings" style="display:none">
+            <div class="modal-header"><div class="modal-title">System Settings</div><button class="modal-close" data-close>&times;</button></div>
+            <div class="modal-body">
+                <p class="muted">Business information, tax, logo upload, payment integrations, backups.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="main">
+        <div class="topbar">
+            <div class="title">
+                <h1>Smart Inventory & Sales System</h1>
+                
+<div style="padding: 20px;"></div>
+                <p1> An all-in-one platform that helps businesses track stock, record sales, and generate accurate reports in real time.</p1>
+        
+            <p2>Whether you're managing a shop, wholesale store, pharmacy, or hardware, the system adapts to your business and keeps everything organized.</p2>
+                <div class="muted">Overview and quick actions</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+                <div class="search" title="Search products (Products table)">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21l-4.35-4.35" stroke="#9aa4b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" stroke="#9aa4b2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <input id="globalSearch" placeholder="Search products..." aria-label="Search products" />
+                </div>
+                <a class="btn" id="addQuick">+ New</a>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard">
+            <h1>Dashboard</h1>
+                <div class="card-container">
+                    <div class="card" data-target="sales"><h3>Today's Sales</h3><p class="muted">Quick view & actions</p></div>
+                    <div class="card" data-target="sales"><h3>Monthly Sales</h3><p class="muted">Open for details</p></div>
+                    <div class="card" data-target="reports"><h3>Profit Today</h3><p class="muted">View profit and reports</p></div>
+                    <div class="card" data-target="inventory"><h3>Low Stock</h3><p class="muted">Manage stock levels</p></div>
+                    <div class="card" data-target="products"><h3>Products</h3><p class="muted">Add or edit products</p></div>
+                    <div class="card" data-target="customers"><h3>Customers</h3><p class="muted">Customer list & history</p></div>
+                    <div class="card" data-target="suppliers"><h3>Suppliers</h3><p class="muted">Supplier contacts</p></div>
+                    <div class="card" data-target="expenses"><h3>Expenses</h3><p class="muted">Record business expenses</p></div>
+                    <div class="card" data-target="users"><h3>Staff Users</h3><p class="muted">Manage staff access</p></div>
+                </div>
+        </section>
+
+        <!-- Overview: simplified and engaging copy -->
+        <section id="overview">
+            <h1 class="section-title">Welcome to STOCK 360</h1>
+            <p class="muted">STOCK 360 helps you run your business smarter: track inventory, process sales, and generate reports — all from one place. To keep this view focused, detailed lists (products, inventory, sales, customers, suppliers, expenses and reports) are available when you open them from the dashboard cards on the right or from the sidebar.</p>
+
+            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:14px">
+                <a class="btn" data-open="products">Get started — Add Product</a>
+                <a class="btn" data-open="inventory">Check Stock</a>
+                <a class="btn" data-open="sales">Record Sale</a>
+                <a class="btn" data-open="reports">View Reports</a>
+            </div>
+
+            <div style="margin-top:18px;color:var(--muted);font-size:14px;line-height:1.45">
+                <strong>Why you'll love it:</strong>
+                <ul style="margin:8px 0 0 18px">
+                    <li>Fast setup — start adding products in seconds.</li>
+                    <li>Real-time stock updates to avoid surprises.</li>
+                    <li>Clear, printable sales receipts and reports.</li>
+                    <li>Role-based user access for secure operations.</li>
+                </ul>
+                <p style="margin-top:10px">Need help? Click the dashboard cards to explore areas, or contact support at <a href="mailto:support@example.com">support@example.com</a>.</p>
+            </div>
+        </section>
+    </div>
+    <script>
+(function(){
+    const overlay = document.getElementById('modal-overlay');
+
+    function openModal(name){
+        const modal = document.querySelector('.modal[data-name="'+name+'"]');
+        if(!modal) return;
+        overlay.classList.add('active');
+        Array.from(overlay.querySelectorAll('.modal')).forEach(m=>m.style.display='none');
+        modal.style.display = 'block';
+        // load data dynamically
+        if(name === 'products') loadProducts();
+        if(name === 'inventory') loadInventory();
+        if(name === 'sales') loadSales();
+        if(name === 'customers') loadCustomers();
+        if(name === 'suppliers') loadSuppliers();
+        if(name === 'expenses') loadExpenses();
+        if(name === 'users') loadUsers();
+    }
+
+    function closeModals(){
+        overlay.classList.remove('active');
+        Array.from(overlay.querySelectorAll('.modal')).forEach(m=>m.style.display='none');
+    }
+
+    document.querySelectorAll('.card[data-target]').forEach(card=>{
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', ()=> openModal(card.dataset.target));
+    });
+    document.querySelectorAll('[data-open]').forEach(btn=>{
+        btn.addEventListener('click', ()=> openModal(btn.dataset.open));
+    });
+    document.querySelectorAll('.sidebar a').forEach(a=>{
+        const href = a.getAttribute('href')||'';
+        if(href.startsWith('#')){
+            const name = href.slice(1);
+            a.addEventListener('click', function(e){
+                if(document.querySelector('.modal[data-name="'+name+'"]')){
+                    e.preventDefault(); openModal(name);
+                }
+            });
+        }
+    });
+    document.querySelectorAll('[data-close]').forEach(btn=>btn.addEventListener('click', closeModals));
+    overlay.addEventListener('click', function(e){ if(e.target === overlay) closeModals(); });
+    document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModals(); });
+
+    // fetch helper
+    async function fetchData(url, method='GET', data=null){
+        let options = {method};
+        if(data){
+            options.body = new URLSearchParams(data);
+        }
+        const res = await fetch(url, options);
+        return await res.json();
+    }
+
+    // --- PRODUCTS ---
+    async function loadProducts(){
+        const table = document.querySelector('#modal-products tbody');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+        const data = await fetchData('get_products.php');
+        if(data.length === 0) table.innerHTML = '<tr><td colspan="6">No products found</td></tr>';
+        else table.innerHTML = data.map(p=>{
+            return `<tr>
+                <td>${p.name}</td>
+                <td>${p.category}</td>
+                <td>${p.buying_price}</td>
+                <td>${p.selling_price}</td>
+                <td>${p.quantity}</td>
+                <td>
+                    <button onclick="editProduct(${p.id})">Edit</button> |
+                    <button onclick="deleteProduct(${p.id})">Delete</button>
+                </td>
+            </tr>`;
+        }).join('');
+    }
+
+    window.addProduct = async function(data){
+        const res = await fetchData('add_product.php','POST', data);
+        alert(res.message);
+        if(res.status==='success') loadProducts();
+    }
+    window.updateProduct = async function(data){
+        const res = await fetchData('update_product.php','POST', data);
+        alert(res.message);
+        if(res.status==='success') loadProducts();
+    }
+    window.deleteProduct = async function(id){
+        if(!confirm('Delete this product?')) return;
+        const res = await fetchData('delete_product.php','POST',{id});
+        alert(res.message);
+        if(res.status==='success') loadProducts();
+    }
+
+    // --- SALES ---
+    async function loadSales(){
+        const table = document.querySelector('#modal-sales tbody');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+        const data = await fetchData('get_sales.php');
+        if(data.length === 0) table.innerHTML = '<tr><td colspan="5">No sales found</td></tr>';
+        else table.innerHTML = data.map(s=>{
+            return `<tr>
+                <td>${s.id}</td>
+                <td>${s.sale_date}</td>
+                <td>${s.total}</td>
+                <td>${s.payment_method}</td>
+                <td>View | Print</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // --- CUSTOMERS ---
+    async function loadCustomers(){
+        const table = document.querySelector('#modal-customers tbody');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+        const data = await fetchData('get_customers.php');
+        if(data.length === 0) table.innerHTML = '<tr><td colspan="4">No customers found</td></tr>';
+        else table.innerHTML = data.map(c=>{
+            return `<tr>
+                <td>${c.name}</td>
+                <td>${c.phone}</td>
+                <td>${c.total_purchases}</td>
+                <td>${c.debt}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // --- SUPPLIERS ---
+    async function loadSuppliers(){
+        const table = document.querySelector('#modal-suppliers tbody');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+        const data = await fetchData('get_suppliers.php');
+        if(data.length === 0) table.innerHTML = '<tr><td colspan="4">No suppliers found</td></tr>';
+        else table.innerHTML = data.map(s=>{
+            return `<tr>
+                <td>${s.name}</td>
+                <td>${s.contact}</td>
+                <td>${s.total_purchases}</td>
+                <td>${s.balance}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // --- EXPENSES ---
+    async function loadExpenses(){
+        const table = document.querySelector('#modal-expenses tbody');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+        const data = await fetchData('get_expenses.php');
+        if(data.length === 0) table.innerHTML = '<tr><td colspan="4">No expenses found</td></tr>';
+        else table.innerHTML = data.map(e=>{
+            return `<tr>
+                <td>${e.category}</td>
+                <td>${e.amount}</td>
+                <td>${e.expense_date}</td>
+                <td>${e.description}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    // --- ADD BUTTON HANDLERS ---
+    document.querySelectorAll('.modal-body .btn').forEach(btn => {
+        btn.addEventListener('click', function(){
+            const modal = btn.closest('.modal');
+            const modalName = modal.getAttribute('data-name');
+            
+            if(modalName === 'products'){
+                const name = prompt("Product Name:");
+                if(!name) return;
+                const buying_price = prompt("Buying Price:") || 0;
+                const selling_price = prompt("Selling Price:") || 0;
+                const quantity = prompt("Quantity:") || 0;
+                addProduct({name, buying_price, selling_price, quantity});
+            }
+            else if(modalName === 'inventory'){
+                const product_id = prompt("Enter Product ID:");
+                if(!product_id) return;
+                const quantity = prompt("Quantity to Add:") || 0;
+                addStock({product_id, quantity});
+            }
+            else if(modalName === 'customers'){
+                const name = prompt("Customer Name:");
+                if(!name) return;
+                const phone = prompt("Phone:") || '';
+                addCustomer({name, phone});
+            }
+            else if(modalName === 'suppliers'){
+                const name = prompt("Supplier Name:");
+                if(!name) return;
+                const contact = prompt("Contact:") || '';
+                addSupplier({name, contact});
+            }
+            else if(modalName === 'expenses'){
+                const category = prompt("Expense Category:");
+                if(!category) return;
+                const amount = prompt("Amount:") || 0;
+                const description = prompt("Description:") || '';
+                addExpense({category, amount, expense_date: new Date().toISOString().split('T')[0], description});
+            }
+            else if(modalName === 'sales'){
+                const product_id = prompt("Enter Product ID:");
+                if(!product_id) return;
+                const quantity = prompt("Enter Quantity:") || 1;
+                recordSale({product_id, quantity});
+            }
+        });
+    });
+
+    window.addCustomer = async function(data){
+        const res = await fetchData('add_customer.php','POST', data);
+        alert(res.message || res.error);
+        if(res.status==='success' || res.status==='error') loadCustomers();
+    }
+
+    window.addSupplier = async function(data){
+        const res = await fetchData('add_suppliers.php','POST', data);
+        alert(res.message || res.error);
+        if(res.status==='success' || res.status==='error') loadSuppliers();
+    }
+
+    window.addExpense = async function(data){
+        const res = await fetchData('add_expenses.php','POST', data);
+        alert(res.message || res.error);
+        if(res.status==='success' || res.status==='error') loadExpenses();
+    }
+
+    window.editProduct = async function(id){
+        const name = prompt("New product name:");
+        if(!name) return;
+        const buying_price = prompt("Buying Price:") || 0;
+        const selling_price = prompt("Selling Price:") || 0;
+        const quantity = prompt("Quantity:") || 0;
+        updateProduct({id, name, buying_price, selling_price, quantity});
+    }
+
+    window.viewSale = function(id){ alert("View sale ID: "+id); }
+    window.printSale = function(id){ alert("Print sale ID: "+id); }
+
+    // --- USERS ---
+    async function loadUsers(){
+        const table = document.querySelector('#modal-users tbody');
+        table.innerHTML = '<tr><td>Loading...</td></tr>';
+        const data = await fetchData('get_users.php');
+        if(data.error || data.length === 0) table.innerHTML = '<tr><td colspan="4">No users found</td></tr>';
+        else table.innerHTML = data.map(u=>{
+            return `<tr>
+                <td>${u.name}</td>
+                <td>${u.role}</td>
+                <td>${u.last_login || 'Never'}</td>
+                <td>${u.status || 'Active'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    window.addUser = async function(data){
+        const res = await fetchData('add_user.php','POST', data);
+        alert(res.message || res.error || 'User added');
+        if(res.status==='success' || res.status==='error') loadUsers();
+    }
+
+    window.recordSale = async function(data){
+        const res = await fetchData('make_sale.php','POST', data);
+        alert(res.message);
+        if(res.status==='success'){
+            loadSales();
+            loadProducts(); // Refresh products to update stock
+        }
+    }
+
+})();
+</script>
+
+
+</body>
+</html>
